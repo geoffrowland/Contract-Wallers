@@ -1,0 +1,826 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+	<link rel="shortcut icon" type="image/x-icon" href="docs/images/favicon.ico" />	
+	<title>Contract Dry Stone Wallers</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.5.0/proj4.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css"
+  integrity="sha512-xodZBNTC5n17Xt2atTPuE1HxjVMSvLVW9ocqUKLsCC5CXdbqCmblAshOMAS6/keqq/sMZMZ19scR4PsZChSR7A=="
+  crossorigin=""/>
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"
+  integrity="sha512-XQoYMqMTK8LvdxXYG3nZ448hOEQiglfqkJs1NOQV44cWnUrBc8PkAOcXy20w0vlaXaVUearIOBhiXZ5V3ynxwA=="
+  crossorigin=""></script>
+    <script src="https://cdn.polyfill.io/v2/polyfill.min.js?features=Promise"></script>
+    <script src="https://code.jquery.com/jquery-1.12.4.min.js" integrity="sha256-ZosEbRLbNQzLpnKIkEdrPv7lOy9C27hHQ+Xp8a4MxAQ="crossorigin="anonymous"></script>
+    <script src="L.TileLayer.BetterWMS.js"></script>
+    <script src="leaflet-bing-layer.js"></script>
+    <script src="leaflet-bng2geojson.js"></script>
+    <script src="leaflet-fullHash.js"></script>
+    <script src="Leaflet.fullscreen.js"></script>
+    <link href="leaflet.fullscreen.css" rel="stylesheet" />
+    <script src="L.Control.MousePosition.js"></script>
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.8.1/css/all.css" integrity="sha384-50oBUHEmvpQ+1lW4y57PTFmhCaXp0ML5d60M1M7uH2+nqUivzIebhndOJK28anvf" crossorigin="anonymous">
+    <link href="L.Control.MousePosition.css" rel="stylesheet" />
+    <link rel="stylesheet" href="leaflet.zoomhome.css"/>
+    <script src="leaflet.zoomhome.js"></script>
+    <link rel="stylesheet" href="Control.OSMGeocoder.css" />
+    <script src="Control.OSMGeocoder.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/0.4.2/leaflet.draw.css"/>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/0.4.2/leaflet.draw.js"></script>
+    <script src="SY68exogyraBeds.js"></script>
+    <script src="somersetParish.js"></script>
+    <script src="faultsUK.js"></script>
+    <script src="dykesUK.js"></script>
+    <link rel="stylesheet" href="https://labs.os.uk/public/os-api-branding/v0.2.0/os-api-branding.css" />
+    <link rel="stylesheet" href="https://api.tiles.mapbox.com/mapbox-gl-js/v1.13.0/mapbox-gl.css" />
+    <script src="https://api.tiles.mapbox.com/mapbox-gl-js/v1.13.0/mapbox-gl.js"></script>
+    <script src="https://unpkg.com/mapbox-gl-leaflet/leaflet-mapbox-gl.js"></script>
+    <script src="contours.js"></script>
+    <script src="water.js"></script>
+	<style>
+		html, body { 
+	    	height: 100%; 
+	    	padding: 0; 
+	    	margin: 0; 
+	    }
+	    .leaflet-container {
+            background:#b3b3b3;
+        } 
+	</style>
+</head>
+<body>
+<div id="map" style="width: 100%; height: 100%;"></div>
+<script>
+	//////////////////////////////////////////////////
+	// OBTAIN Bing Key from
+	var BING_KEY = 'AohFvM_FD-p0478UuVC3ErCaoLzkJH_ftz_gGnSB9iUW_15xRgnZEf4cVkptGa7G'; //My
+    //var BING_KEY = 'AuhiCJHlGzhg93IqUH_oCpl_-ZUrIE6SPftlyGYUvr9Amx5nzA-WqGcPquyFZl4L'; //Plugin default
+    //////////////////////////////////////////////////
+    
+    var apiKey = 'AAPGGZnt29YGEZIJk7DAvy4vwHiUXDC7';
+    var apiKeyVector = '8ZHfw8XcfS9fiUTxROr3MixGDTnqKm4U';
+    var serviceUrl = 'https://api.os.uk/maps/raster/v1/zxy';
+	var blank = L.tileLayer('');
+    var hill25 = L.tileLayer('https://geoffrowland.github.io/Hillshade-25m/{z}/{x}/{y}.png', {
+		tms: true,
+	    transparent: true,
+	    opacity: 1.0,
+	    minZoom: 4,
+	    maxNativeZoom: 12,
+	    attribution: '&copy; <a href="https://land.copernicus.eu/imagery-in-situ/eu-dem/eu-dem-v1.1" title ="EU-DEM v1.1 Copernicus Programme" target="_blank" >Copernicus</a> 2016',
+    });
+    var google = L.tileLayer('https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
+		subdomains:['mt0','mt1','mt2','mt3'],
+        attribution: 'Imagery &copy; 2021 Google, Map data &copy; 2021 <a target="_blank" href="https://www.google.com/intl/en_uk/help/terms_maps/">Terms</a>',
+        maxZoom: 20
+	});
+	var googletransp = L.tileLayer('https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
+		subdomains:['mt0','mt1','mt2','mt3'],
+        attribution: 'Imagery &copy; 2021 Google, Map data &copy; 2021 <a target="_blank" href="https://www.google.com/intl/en_uk/help/terms_maps/">Terms</a>',
+        opacity: 0.5,
+        maxZoom: 20
+	});	
+	var aerial = L.tileLayer.bing({
+		bingMapsKey: BING_KEY,
+        imagerySet: 'Aerial',
+        culture: 'en_GB',
+        attribution: 'Bing Maps',
+	    maxNativeZoom: 17,
+	    maxZoom: 20
+	});
+	var aerialtransp = L.tileLayer.bing({
+		bingMapsKey: BING_KEY,
+        imagerySet: 'Aerial',
+        culture: 'en_GB',
+        opacity: 0.5,
+		maxNativeZoom: 17,
+	    maxZoom: 20
+	});
+	var aerialWithLabels = L.tileLayer.bing({
+		bingMapsKey: BING_KEY,
+        imagerySet: 'AerialWithLabels',
+        culture: 'en_GB',
+        maxNativeZoom: 17,
+	    maxZoom: 20
+	});
+    var road = L.tileLayer(serviceUrl + '/Road_3857/{z}/{x}/{y}.png?key=' + apiKey, { maxNativeZoom:16, maxZoom: 18 });
+    var road_overlay = L.tileLayer(serviceUrl + '/Road_3857/{z}/{x}/{y}.png?key=' + apiKey, { opacity:0.5, maxNativeZoom:16, maxZoom: 18 });
+	
+    var bgs50bed = L.tileLayer.betterWms('https://map.bgs.ac.uk/arcgis/services/BGS_Detailed_Geology/MapServer/WMSServer', {
+        layers: 'BGS.50k.Bedrock',
+        transparent: true,
+        format: 'image/png',
+        opacity: 0.5,
+        info_format: 'text/html',
+        identify: true,
+        minZoom: 13,
+        maxNativeZoom: 18,
+        maxZoom: 24
+    });
+    var bgs50sup = L.tileLayer.betterWms('https://map.bgs.ac.uk/arcgis/services/BGS_Detailed_Geology/MapServer/WMSServer', {
+        layers: 'BGS.50k.Superficial.deposits',
+        transparent: true,
+        format: 'image/png',
+        opacity: 0.3,
+        info_format: 'text/html',
+        identify: true,
+        minZoom: 13,
+        maxNativeZoom: 18,
+        maxZoom: 24
+    });
+    var bgs50mass = L.tileLayer.betterWms('https://map.bgs.ac.uk/arcgis/services/BGS_Detailed_Geology/MapServer/WMSServer', {
+        layers: 'BGS.50k.Mass.movement',
+        transparent: true,
+        format: 'image/png',
+        opacity: 0.5,
+        info_format: 'text/html',
+        identify: true,
+        minZoom: 13,
+        maxNativeZoom: 18,
+        maxZoom: 24
+    });
+    var bgs50art = L.tileLayer.betterWms('https://map.bgs.ac.uk/arcgis/services/BGS_Detailed_Geology/MapServer/WMSServer', {
+        layers: 'BGS.50k.Artificial.ground',
+        transparent: true,
+        format: 'image/png',
+        opacity: 0.5,
+        info_format: 'text/html',
+        identify: true,
+        minZoom: 13,
+        maxNativeZoom: 18,
+        maxZoom: 24
+    });
+    var bgs50lin = L.tileLayer.betterWms('https://map.bgs.ac.uk/arcgis/services/BGS_Detailed_Geology/MapServer/WMSServer', {
+        layers: 'BGS.50k.Linear.features',
+        transparent: true,
+        format: 'image/png',
+        opacity: 1.0,
+        info_format: 'text/html',
+        identify: true,
+        minZoom: 13,
+        maxNativeZoom: 18,
+        maxZoom: 24
+    });
+	var exogyra = L.geoJSON(exogyraBeds,{
+        onEachFeature: function(feature, layer) {
+		   layer.bindPopup(
+              'Bedrock: PORTLAND SAND FORMATION - LIMESTONE' +
+              '<br />Informal Division: CORTON HILL MEMBER (EXOGYRA BEDS OR SCAR CEMENTSTONE)' +
+              '<br />Age: TITHONIAN' +
+              '<br />Period: JURASSIC' +
+              '<br />Type: Sedimentary Bedrock' +
+              '<br />Description: Limestone' 
+            );
+        },		
+        "color": "#ffffff",
+        "weight": 1,
+        "opacity": 0.3,
+        "fillOpacity": 0.3,
+        minZoom: 13,
+        maxNativeZoom: 18,
+        maxZoom: 24      	
+	});
+//   var bgs625bed = L.tileLayer.betterWms('http://ogc.bgs.ac.uk/cgi-bin/BGS_Bedrock_and_Superficial_Geology/wms', {
+     var bgs625bed = L.tileLayer.betterWms('https://dorsetgeologistsassociation.org/bgs/cgi-bin/BGS_Bedrock_and_Superficial_Geology/wms', {
+        layers: 'GBR_BGS_625k_BLS',
+        transparent: true,
+        format: 'image/png',
+        opacity: 0.5,
+        info_format: 'text/html',
+        identify: true,
+        minZoom: 0,
+        maxZoom: 12
+    });
+//  var bgs625sup = L.tileLayer.betterWms('http://ogc.bgs.ac.uk/cgi-bin/BGS_Bedrock_and_Superficial_Geology/wms', {
+    var bgs625sup = L.tileLayer.betterWms('https://dorsetgeologistsassociation.org/bgs/cgi-bin/BGS_Bedrock_and_Superficial_Geology/wms', {
+        layers: 'GBR_BGS_625k_SLS',
+        transparent: true,
+        format: 'image/png',
+        opacity: 0.3,
+        info_format: 'text/html',
+        identify: true,
+        minZoom: 0,
+        maxZoom: 12
+    });
+    var geobed = L.layerGroup([bgs625bed, bgs50bed, exogyra], {
+		attribution: '<a target="_blank" href = "https://www.bgs.ac.uk/data/services/wms.html" title="British Geological Survey">BGS</a> maps © UKRI 2020'
+	});
+    var geosup = L.layerGroup([bgs625sup, bgs50sup], {
+		attribution: '<a target="_blank" href = "https://www.bgs.ac.uk/data/services/wms.html" title="British Geological Survey">BGS</a> maps © UKRI 2020'
+	});
+	var hill5 = L.tileLayer('https://geoffrowland.github.io/Hillshade-5m/{z}/{x}/{y}.png', {
+		tms: true,
+        format: 'image/png',
+        transparent: true,
+        opacity:1.0,
+        minZoom: 11,
+        maxNativeZoom: 15,
+        attribution: '&copy; Crown copyright and database rights 2020 Ordnance Survey (10002525) <a title="OS Terrain 5" target="_blank" href="https://www.ordnancesurvey.co.uk/business-government/products/terrain-5">OS Terrain 5</a>'
+	});
+	var hill2 = L.tileLayer('https://geoffrowland.github.io/Hillshade-2m/{z}/{x}/{y}.png', {
+		tms: true,
+        format: 'image/png',
+        transparent: true,
+        opacity:1.0,
+        minZoom: 12,
+        maxNativeZoom: 15,
+        attribution: '&copy <a title="Environment Agency LiDAR" target="_blank" href="https://environment.data.gov.uk/DefraDataDownload/?Mode=survey">EA</a> copyright and database right 2020'
+	});
+	var hill2surf = L.tileLayer('https://geoffrowland.github.io/Hillshade-2m-Coast/{z}/{x}/{y}.png', {
+		tms: true,
+        format: 'image/png',
+        transparent: true,
+        opacity:1.0,
+        minZoom: 12,
+        maxZoom: 24, 
+        maxNativeZoom: 15,
+		attribution: '&copy <a title="Environment Agency LiDAR" target="_blank" href="https://environment.data.gov.uk/DefraDataDownload/?Mode=survey">EA</a> copyright and database right 2020'
+	});
+	var hill1c = L.tileLayer('https://geoffrowland.github.io/Hillshade-1m-Cornwall/{z}/{x}/{y}.png', {
+		tms: true,
+        format: 'image/png',
+        transparent: true,
+        opacity: 1.0,
+        minZoom: 13,
+        maxNativeZoom: 16,
+        maxZoom: 24, 
+        //bounds: L.latLngBounds([[50.36, -3.86719],[51.48, -3.51563]]),
+        attribution: '&copy <a title="Environment Agency LiDAR" target="_blank" href="https://environment.data.gov.uk/DefraDataDownload/?Mode=survey">EA</a> copyright and database right 2020'
+	});
+	var hill1d = L.tileLayer('https://geoffrowland.github.io/Hillshade-1m-Devon/{z}/{x}/{y}.png', {
+		tms: true,
+		//layers: 'LIDAR_Composite_DTM_1m',
+        format: 'image/png',
+        transparent: true,
+        opacity: 1.0,
+        minZoom: 13,
+        maxNativeZoom: 16,
+        maxZoom: 24, 
+        bounds: L.latLngBounds([[50.36, -3.86719],[51.48, -3.51563]]),
+        attribution: '&copy <a title="Environment Agency LiDAR" target="_blank" href="https://environment.data.gov.uk/DefraDataDownload/?Mode=survey">EA</a> copyright and database right 2020'
+	});
+	var hill1dds = L.tileLayer('https://geoffrowland.github.io/Hillshade-1m-Devon-Dorset-Somerset/{z}/{x}/{y}.png', {
+		tms: true,
+        format: 'image/png',
+        transparent: true,
+        opacity: 1.0,
+        minZoom: 13,
+        maxNativeZoom: 16,
+        maxZoom: 24, 
+        bounds: L.latLngBounds([[50.36, -3.51563],[51.48, -2.81250]]),
+        attribution: '&copy <a title="Environment Agency LiDAR" target="_blank" href="https://environment.data.gov.uk/DefraDataDownload/?Mode=survey">EA</a> copyright and database right 2020'
+	});
+	var hill1ds = L.tileLayer('https://geoffrowland.github.io/Hillshade-1m-Dorset-Somerset/{z}/{x}/{y}.png', {
+		tms: true,
+        format: 'image/png',
+        transparent: true,
+        opacity: 1.0,
+        minZoom: 13,
+        maxNativeZoom: 16,
+        maxZoom: 24, 
+        bounds: L.latLngBounds([[50.36, -2.81250],[51.48, -2.46094]]),
+        attribution: '&copy <a title="Environment Agency LiDAR" target="_blank" href="https://environment.data.gov.uk/DefraDataDownload/?Mode=survey">EA</a> copyright and database right 2020'
+	});
+	var hill1dse = L.tileLayer('https://geoffrowland.github.io/Hillshade-1m-Dorset-Somerset-East/{z}/{x}/{y}.png', {
+		tms: true,
+        format: 'image/png',
+        transparent: true,
+        opacity: 1.0,
+        minZoom: 13,
+        maxNativeZoom: 16,
+        maxZoom: 24, 
+        bounds: L.latLngBounds([[50.36, -2.46094],[51.48, -2.10938]]),
+        attribution: '&copy <a title="Environment Agency LiDAR" target="_blank" href="https://environment.data.gov.uk/DefraDataDownload/?Mode=survey">EA</a> copyright and database right 2020'
+	});
+	var hill1dh = L.tileLayer('https://geoffrowland.github.io/Hillshade-1m-Dorset-Hampshire/{z}/{x}/{y}.png', {
+		tms: true,
+        format: 'image/png',
+        transparent: true,
+        opacity: 1.0,
+        minZoom: 13,
+        maxNativeZoom: 16,
+        maxZoom: 24, 
+        bounds: L.latLngBounds([[50.36, -2.46094],[51.48, -2.10938]]),
+        attribution: '&copy <a title="Environment Agency LiDAR" target="_blank" href="https://environment.data.gov.uk/DefraDataDownload/?Mode=survey">EA</a> copyright and database right 2020'
+	});
+	var hill50e = L.tileLayer('https://geoffrowland.github.io/Hillshade-50cm-Dorset-East/{z}/{x}/{y}.png', {
+		tms: true,
+        format: 'image/png',
+        transparent: true,
+        opacity: 1.0,
+        minZoom: 14,
+        maxNativeZoom: 17,
+        maxZoom: 24,
+        attribution: '&copy <a title="Environment Agency LiDAR" target="_blank" href="https://environment.data.gov.uk/DefraDataDownload/?Mode=survey">EA</a> copyright and database right 2020'
+	});
+	var hill50w = L.tileLayer('https://geoffrowland.github.io/Hillshade-50cm-Dorset-West/{z}/{x}/{y}.png', {
+		tms: true,
+        format: 'image/png',
+        transparent: true,
+        opacity: 1.0,
+        minZoom: 14,
+        maxNativeZoom: 17,
+        maxZoom: 24,
+        attribution: '&copy <a title="Environment Agency LiDAR" target="_blank" href="https://environment.data.gov.uk/DefraDataDownload/?Mode=survey">EA</a> copyright and database right 2020'
+	});
+ 	
+	var terraindtm = L.layerGroup([hill25, hill5, hill2surf, hill2, hill1c, hill1d, hill1dds, hill1ds, hill1dse, hill1dh, hill50e, hill50w],{
+		attribution: '&copy <a title="Environment Agency LiDAR" target="_blank" href="https://environment.data.gov.uk/DefraDataDownload/?Mode=survey">EA</a> copyright and database right 2020'
+	});
+	var surface2 = L.tileLayer('https://geoffrowland.github.io/Surface-2m-Milborne-Port/{z}/{x}/{y}.png', {
+		tms: true,
+        format: 'image/png',
+        transparent: true,
+        opacity:1.0,
+        minZoom: 12,
+        maxNativeZoom: 18,
+        maxZoom:19,
+        attribution: '&copy <a title="Environment Agency LiDAR" target="_blank" href="https://environment.data.gov.uk/DefraDataDownload/?Mode=survey">EA</a> copyright and database right 2020',
+        bounds: L.latLngBounds([[50.9330447464119, -2.4282921089074527], [51.023581116985554, -2.5716893272990524]]),
+	});
+	var surface1 = L.tileLayer('https://geoffrowland.github.io/Surface-1m-Milborne-Port/{z}/{x}/{y}.png', {
+		tms: true,
+        format: 'image/png',
+        transparent: true,
+        opacity: 1.0,
+        minZoom: 12,
+        maxNativeZoom: 18,
+        maxZoom:19,
+        attribution: '&copy <a title="Environment Agency LiDAR" target="_blank" href="https://environment.data.gov.uk/DefraDataDownload/?Mode=survey">EA</a> copyright and database right 2020',
+        bounds: L.latLngBounds([[50.841503, -2.783661], [51.024121, -2.285156]]),
+	});
+	var surfacedsm = L.layerGroup([surface2, surface1],{
+		attribution: '&copy <a title="Environment Agency LiDAR" target="_blank" href="https://environment.data.gov.uk/DefraDataDownload/?Mode=survey">EA</a> copyright and database right 2020'
+	});
+    var osmbase = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+		attribution: '&copy; <a href="https://openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+		opacity: 1.0,
+	    maxNativeZoom: 18,
+	    maxZoom: 19
+	});
+    var osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+		attribution: '&copy; <a href="https://openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+		opacity: 0.5,
+	    maxNativeZoom: 18,
+	    maxZoom: 19
+	});
+	var opendatabase = L.tileLayer('https://geo.nls.uk/maps/opendata/{z}/{x}/{y}.png', {
+		format: 'image/png',
+        transparent: true,
+        opacity: 1.0,
+        minZoom: 4,
+        maxZoom: 11
+	});
+	var bingosbase = L.tileLayer.bing({
+		bingMapsKey: BING_KEY,
+        imagerySet: 'OrdnanceSurvey',
+        culture: 'en_GB',
+        opacity: 1.0,
+        minZoom: 12,
+        maxNativeZoom: 17,
+        maxZoom: 20
+	});
+	var osbase = L.layerGroup([opendatabase, bingosbase]);	
+	var opendata = L.tileLayer('https://geo.nls.uk/maps/opendata/{z}/{x}/{y}.png', {
+		format: 'image/png',
+        transparent: true,
+        opacity: 0.5,
+        minZoom: 4,
+        maxZoom: 11
+	});
+	var bingos = L.tileLayer.bing({
+		bingMapsKey: BING_KEY,
+        imagerySet: 'OrdnanceSurvey',
+        culture: 'en_GB',
+        opacity: 0.5,
+        minZoom: 12,
+        maxNativeZoom: 17
+	});
+	var os = L.layerGroup([opendata, bingos]);
+
+	var opendataonly = L.tileLayer('https://geo.nls.uk/maps/opendata/{z}/{x}/{y}.png', {
+		format: 'image/png',
+        transparent: true,
+        opacity: 0.5,
+        minZoom: 4,
+        maxNativeZoom: 17
+	});
+	var somerset1880 = L.tileLayer('https://geo.nls.uk/mapdata3/os/25_inch/somerset1/{z}/{x}/{y}.png', {
+		format: 'image/png',
+        transparent: true,
+        opacity: 0.5,
+        minZoom: 11,
+	    maxNativeZoom: 18,
+	    maxZoom: 19,
+        bounds: L.latLngBounds([[50.82119720, -3.83818409],[51.51807409, -2.21205693]]),
+	attribution: 'Historic OS maps © <a target = "_blank" href="https://www.bl.uk/" title="The British Library">BL</a> and <a target = "_blank" href="https://maps.nls.uk/" title="The National Library of Scotland">NLS</a>'
+    });
+ 	var os10k = L.tileLayer('https://mapseries-tilesets.s3.amazonaws.com/os/britain10knatgrid/{z}/{x}/{y}.png', {
+		attribution: 'Historic OS maps © <a target = "_blank" href="https://maps.nls.uk/" title="National Library of Scotland">NLS</a>',
+		format: 'image/png',
+        transparent: true,
+        opacity: 0.5,
+        //minZoom: 11,
+	    maxNativeZoom: 16,
+	    maxZoom: 19,
+        bounds: L.latLngBounds([[49.84594174, -6.84831493],[58.7099994, 1.78071283]])
+	});	
+	var somerset = L.tileLayer('https://geo.nls.uk/mapdata3/os/25_inch/somerset/{z}/{x}/{y}.png', {
+		format: 'image/png',
+        transparent: true,
+        opacity: 0.5,
+        minZoom: 11,
+	    maxNativeZoom: 18,
+	    maxZoom: 19,
+        bounds: L.latLngBounds([[50.82106580, -3.83855710],[51.50398795, -2.21196942]])
+	});
+	var somersetholes = L.tileLayer('https://geo.nls.uk/mapdata3/os/25_inch/holes_england/{z}/{x}/{y}.png', {
+		format: 'image/png',
+        transparent: true,
+        opacity: 0.5,
+        minZoom: 11,
+	    maxNativeZoom: 18,
+	    maxZoom: 19,
+        bounds: L.latLngBounds([[50.82106580, -3.83855710],[51.50398795, -2.21196942]])
+	});
+    var somerset1900 = L.layerGroup([somersetholes, somerset],{
+		attribution: 'Historic OS maps © <a target = "_blank" href="https://maps.nls.uk/" title="National Library of Scotland">NLS</a>'
+    });
+    var somersettithe = L.tileLayer.wms('https://dorsetgeologistsassociation.org/tithe/arcgis/services/base/1840s_tithe_128dpi_mk4/MapServer/WmsServer?', {
+        layers: '0',
+        transparent: true,
+        format: 'image/png',
+        opacity: 0.5,
+        minZoom: 11,
+	    maxNativeZoom: 18,
+	    maxZoom: 19,
+        info_format: 'text/html',
+        identify: true,
+        attribution: 'Tithe maps © <a target = "_blank" href="https://www.kypwest.org.uk/" title="Know Your Place">KYP</a>'
+    });
+    var parish = L.geoJSON(somersetParish,{
+        onEachFeature: function(feature, layer) {
+            layer.bindPopup(
+                feature.properties.Name
+            );
+        },		
+        "color": "#330000",
+        "weight": 2,
+        "opacity": 0.2,
+        "fillOpacity": 0		
+	});
+	var faults = L.geoJSON(faultsUK,{
+        "color": "#000000",
+        "weight": 1,
+        "opacity": 1,
+        "dashArray": "10 2",
+        "fillOpacity": 0
+	});
+	var dykes = L.geoJSON(dykesUK,{
+        "color": "#FF0000",
+        "weight": 1,
+        "opacity": 1,
+        "dashArray": "10 2",
+        "fillOpacity": 0
+	});
+    var blueIcon = L.icon({
+	    iconUrl: 'img/marker-icon-2x-blue.png',
+	    shadowUrl: 'img/marker-shadow.png',
+	    iconSize: [25, 41],
+	    iconAnchor: [12, 41],
+	    popupAnchor: [1, -34],
+	    shadowSize: [41, 41]
+    });	
+    var redIcon = L.icon({
+	    iconUrl: 'img/marker-icon-2x-red.png',
+	    shadowUrl: 'img/marker-shadow.png',
+	    iconSize: [25, 41],
+	    iconAnchor: [12, 41],
+	    popupAnchor: [1, -34],
+	    shadowSize: [41, 41]
+    });
+    var greenIcon = L.icon({
+	    iconUrl: 'img/marker-icon-2x-green.png',
+	    shadowUrl: 'img/marker-shadow.png',
+	    iconSize: [25, 41],
+	    iconAnchor: [12, 41],
+	    popupAnchor: [1, -34],
+	    shadowSize: [41, 41]
+    });
+    var greenBlueIcon = L.icon({
+	    iconUrl: 'img/marker-icon-2x-green-blue.png',
+	    shadowUrl: 'img/marker-shadow.png',
+	    iconSize: [25, 41],
+	    iconAnchor: [12, 41],
+	    popupAnchor: [1, -34],
+	    shadowSize: [41, 41]
+    });
+    var greyIcon = L.icon({
+	    iconUrl: 'img/marker-icon-2x-grey.png',
+	    shadowUrl: 'img/marker-shadow.png',
+	    iconSize: [25, 41],
+	    iconAnchor: [12, 41],
+	    popupAnchor: [1, -34],
+	    shadowSize: [41, 41]
+    });
+    var blackIcon = L.icon({
+	    iconUrl: 'img/marker-icon-2x-black.png',
+	    shadowUrl: 'img/marker-shadow.png',
+	    iconSize: [25, 41],
+	    iconAnchor: [12, 41],
+	    popupAnchor: [1, -34],
+	    shadowSize: [41, 41]
+    });
+    var orangeIcon = L.icon({
+	    iconUrl: 'img/marker-icon-2x-orange.png',
+	    shadowUrl: 'img/marker-shadow.png',
+	    iconSize: [25, 41],
+	    iconAnchor: [12, 41],
+	    popupAnchor: [1, -34],
+	    shadowSize: [41, 41]
+    });
+    var yellowIcon = L.icon({
+	    iconUrl: 'img/marker-icon-2x-yellow.png',
+	    shadowUrl: 'img/marker-shadow.png',
+	    iconSize: [25, 41],
+	    iconAnchor: [12, 41],
+	    popupAnchor: [1, -34],
+	    shadowSize: [41, 41]
+    });
+    var pooleIcon = L.icon({
+	    iconUrl: 'img/marker-icon-2x-poole-sand.png',
+	    shadowUrl: 'img/marker-shadow.png',
+	    iconSize: [25, 41],
+	    iconAnchor: [12, 41],
+	    popupAnchor: [1, -34],
+	    shadowSize: [41, 41]
+    });
+    var londonClayIcon = L.icon({
+	    iconUrl: 'img/marker-icon-2x-london-clay-sand.png',
+	    shadowUrl: 'img/marker-shadow.png',
+	    iconSize: [25, 41],
+	    iconAnchor: [12, 41],
+	    popupAnchor: [1, -34],
+	    shadowSize: [41, 41]
+    });
+        var corallianIcon = L.icon({
+	    iconUrl: 'img/marker-icon-2x-corallian.png',
+	    shadowUrl: 'img/marker-shadow.png',
+	    iconSize: [25, 41],
+	    iconAnchor: [12, 41],
+	    popupAnchor: [1, -34],
+	    shadowSize: [41, 41]
+    });
+    var forestMarbleIcon = L.icon({
+	    iconUrl: 'img/marker-icon-2x-forest-marble.png',
+	    shadowUrl: 'img/marker-shadow.png',
+	    iconSize: [25, 41],
+	    iconAnchor: [12, 41],
+	    popupAnchor: [1, -34],
+	    shadowSize: [41, 41]
+    });
+    var stairHoleIcon = L.icon({
+	    iconUrl: 'img/marker-icon-2x-stair-hole.png',
+	    shadowUrl: 'img/marker-shadow.png',
+	    iconSize: [25, 41],
+	    iconAnchor: [12, 41],
+	    popupAnchor: [1, -34],
+	    shadowSize: [41, 41]
+    });
+    var portlandFreestoneIcon = L.icon({
+	    iconUrl: 'img/marker-icon-2x-portland-freestone.png',
+	    shadowUrl: 'img/marker-shadow.png',
+	    iconSize: [25, 41],
+	    iconAnchor: [12, 41],
+	    popupAnchor: [1, -34],
+	    shadowSize: [41, 41]
+    });
+    var whiteBlueLiasIcon = L.icon({
+	    iconUrl: 'img/marker-icon-2x-white-lias-blue-lias.png',
+	    shadowUrl: 'img/marker-shadow.png',
+	    iconSize: [25, 41],
+	    iconAnchor: [12, 41],
+	    popupAnchor: [1, -34],
+	    shadowSize: [41, 41]
+    });
+    var bridportSandIcon = L.icon({
+	    iconUrl: 'img/marker-icon-2x-bridport-sand.png',
+	    shadowUrl: 'img/marker-shadow.png',
+	    iconSize: [25, 41],
+	    iconAnchor: [12, 41],
+	    popupAnchor: [1, -34],
+	    shadowSize: [41, 41]
+    });
+    var siteData = L.geoJson(null, {
+		pointToLayer: function (feature, latlng) {
+			if (feature.properties.Group == 'Corallian'){
+			    return L.marker(latlng, {icon: corallianIcon})
+			}else if(feature.properties.Member == 'Stair Hole'){
+				return L.marker(latlng, {icon: stairHoleIcon})
+			}else if(feature.properties.Member == 'Portland Freestone'){
+				return L.marker(latlng, {icon: portlandFreestoneIcon})
+			}else if(feature.properties.Formation == 'Forest Marble'){
+				return L.marker(latlng, {icon: forestMarbleIcon})	
+			}else if(feature.properties.Member == 'West Park Farm'){
+				return L.marker(latlng, {icon: londonClayIcon})	
+			}else if(feature.properties.Formation == 'Poole'){
+				return L.marker(latlng, {icon: pooleIcon})			    
+			}else if(feature.properties.Formation == 'Upper Greensand'){
+				return L.marker(latlng, {icon: greenBlueIcon})
+			}else if(feature.properties.Group == 'Chalk'){
+				return L.marker(latlng, {icon: greenIcon})
+			}else if(feature.properties.Group == 'Inferior Oolite'){
+				return L.marker(latlng, {icon: orangeIcon})
+			}else if(feature.properties.Formation == 'Bridport Sand'){
+				return L.marker(latlng, {icon: bridportSandIcon})
+			}else{
+				return L.marker(latlng, {icon: redIcon})
+			}
+        },
+        onEachFeature: function(feature, layer) {
+			layer.bindTooltip(
+			    feature.properties.Firstname +
+			     ' ' + feature.properties.Lastname +
+			     '<br />' + feature.properties.Town
+			);
+            layer.bindPopup(
+            '' + feature.properties.Firstname + ' ' + feature.properties.Lastname +
+            '<br />' + feature.properties.Address + 
+            '<br />Email: <a href="mailto:' + feature.properties.Email +'">' + feature.properties.Email + '</a>' +      
+            '<br />Tel: ' + feature.properties.Tel + 
+            '<br />Web: <a href="'+ feature.properties.Web +'" target="_blank">' + feature.properties.Web + '</a>' +
+            '<br />Walling: ' + feature.properties.Walling +    
+            '<br />Other: ' + feature.properties.Other
+            );
+        }
+    });
+	var map = L.map('map', {
+		center: [50.92000, -2.73000],
+		minZoom: 4,
+		zoom: 8,
+		maxZoom: 19,
+		layers: [terraindtm, road_overlay],
+		fullscreenControl: true,
+	});
+    map.createPane('ontop');
+    map.createPane('onverytop');
+    map.getPane('ontop').style.zIndex = 450;
+    map.getPane('onverytop').style.zIndex = 451;
+    map.getPane('ontop').style.pointerEvents = 'none';
+    map.getPane('onverytop').style.pointerEvents = 'none'
+    // Load and display vector tile layer on the map.
+    var gl = L.mapboxGL({
+        style: customStyleJson,
+        pane: 'ontop',
+        transformRequest: url => {
+            if(! /[?&]key=/.test(url) ) url += '?key=' + apiKeyVector
+            return {
+                url: url + '&srs=3857'
+            }
+        }
+    });
+    
+    // Load and display vector tile layer on the map.
+    var gl1 = L.mapboxGL({
+        style: customStyleJson1,
+        pane: 'onverytop',
+        transformRequest: url => {
+            if(! /[?&]key=/.test(url) ) url += '?key=' + apiKeyVector
+            return {
+                url: url + '&srs=3857'
+            }
+        }
+    });
+    map.attributionControl.addAttribution('<a target="_blank" title="Open Source Geospatial Foundation" href="https://www.osgeo.org/">OSGeo</a> <a target="_blank" href="https://gdal.org/">GDAL</a>, <a target="_blank">QGIS</a>, &copy; Geoff Rowland copyright and database rights 2020');
+	map.attributionControl.addAttribution('EDINA <a href="https://digimap.edina.ac.uk/" target="_blank">Digimap</a>');
+	
+    // FeatureGroup is to store editable layers
+     var drawnItems = new L.FeatureGroup();
+     map.addLayer(drawnItems);
+     var drawControl = new L.Control.Draw({
+	 			draw: {
+				polygon: {
+					shapeOptions: {
+						color: 'purple'
+					},
+				},
+				polyline: {
+					shapeOptions: {
+						color: 'red'
+					},
+				},
+				rect: {
+					shapeOptions: {
+						color: 'green'
+					},
+				},
+				circle: {
+					shapeOptions: {
+						color: 'steelblue'
+					},
+				},
+			},
+         edit: {
+             featureGroup: drawnItems
+         }
+     });
+   //map.addControl(drawControl);
+   //map.on(L.Draw.Event.CREATED, function (event) {
+   //   var layer = event.layer;
+   //   drawnItems.addLayer(layer);
+   //});
+	
+    var site = omnivore.csv('site.csv', null, siteData).on('ready', function() {}).addTo(map);
+	
+    var geolin = L.layerGroup([faults, dykes, bgs50lin], {
+		attribution: '<a target="_blank" href = "https://www.bgs.ac.uk/data/services/wms.html" title="British Geological Survey">BGS</a> maps © UKRI 2020'
+	});
+    map.on('zoomend', function() {
+    var zoomlevel = map.getZoom();
+    if (map.hasLayer(faults)) {
+        if (zoomlevel  <13){
+            faults.setStyle({opacity:1});
+        } else {
+	    	faults.setStyle({opacity:0});
+	    }
+    }
+    if (map.hasLayer(dykes)) {
+        if (zoomlevel  <13){
+            dykes.setStyle({opacity:1});
+        } else {
+	    	dykes.setStyle({opacity:0});
+	    }
+    }
+    });
+    var baseLayers = {
+		"<span title = Hillshade Digital Terrain Model'>Hillshade</span>": terraindtm,
+		"<span title = 'OpenStreetMap'>OpenStreetMap</span>": osmbase,
+        "<span title = 'OS Open Data Road'>OS Road</span>": road,
+		"<span title = 'Bing Maps OS'>OS Bing</span>": osbase,
+		"<span title = 'Bing Maps Aerial'>Aerial</span>": aerial,
+		"<span title = 'Google Maps Satellite'>Satellite</span>": google,
+		"<span title = 'Blank'>Blank</span>": blank
+	};
+	var overlays = {
+//  	"<span title = 'Hillshade Digital Surface Model'>Surface</span>": surfacedsm,
+		"<span title = 'Bing Maps Aerial'>Aerial</span>": aerialtransp,
+		"<span title = 'Google Maps Satellite'>Satellite</span>": googletransp,
+		"<span title = 'OpenStreetMap'>OpenStreetMap</span>": osm,
+		"<span title = 'OS Open Data Road'>OS Road</span>": road_overlay,
+		"<span title = 'Bing Maps OS Current'>OS Current</span>": os,
+		"<span title = 'OS 1:10,560 1950-1967'>OS 1950-1967</span>": os10k,
+//		"<span title = 'OS Second Edition 25 inch ~1900'>OS 2nd Edition ~1900</span>": somerset1900,		
+//		"<span title = 'OS First Edition 25 inch ~1880'>OS 1st Edition ~1880</span>": somerset1880,
+//		"<span title = 'Tithe Maps ~1840'>Tithe Maps ~1840</span>": somersettithe,
+		"<span title = 'BGS Geology Bedrock'>Geology Bedrock</span>": geobed,
+		"<span title = 'BGS Geology Superficial'>Geology Surface</span>": geosup,
+		"<span title = 'BGS Geology Mass Movement'>Geology Landslip</span>": bgs50mass,
+		"<span title = 'BGS Geology Made Up Ground'>Geology Artificial</span>": bgs50art,
+		"<span title = 'BGS Geology Linear Features'>Geology Linear</span>": geolin,
+		"<span title = 'OS Contours'>Contours</span>": gl,
+		"<span title = 'OS Water'>Water</span>": gl1,
+//		"<span title = 'Parish outlines'>Parish</span>": parish,
+		"<span title = 'Sites'>Site</span>": site,
+		"<span title = 'Drawing tools'>Draw</span>": drawnItems
+	};
+    var allMapLayers = { 
+		'terraindtm': terraindtm,
+		'aerial': aerial,
+		'bingosbase': bingosbase,
+		'blank': blank,		
+		'os': os,
+		'osbase': osbase,
+		'opendataonly': opendataonly,
+		'osm': osm,
+		'osmbase': osmbase,
+//	    'somerset1880': somerset1880,
+//		'somerset1900': somerset1900,
+		'os10k': os10k,
+		'aerialtransp': aerialtransp,
+		'geobed': geobed,
+		'geosup': geosup,
+		'bgs50mass': bgs50mass,
+		'bgs50art': bgs50art,
+		'geolin': geolin,
+	//	'parish': parish,
+		'site': site,
+	    'drawnItems': drawnItems
+	};
+    var osmGeocoder = new L.Control.OSMGeocoder();
+    map.addControl(osmGeocoder);
+    //L.Control.OSMGeocoder().addTo(map);
+	L.control.layers(baseLayers, overlays).addTo(map);
+	//var zoomHome = L.Control.zoomHome();
+    //zoomHome.addTo(map);
+	L.control.scale().addTo(map);
+    L.control.mousePosition({
+		lngFirst:true,
+		prefix:'Lng-Lat: ',
+		position:'bottomright'
+	}).addTo(map);
+	//L.hash(map, allMapLayers);
+</script>
+</body>
+</html>
